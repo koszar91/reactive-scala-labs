@@ -1,6 +1,6 @@
 package EShop.lab2
 
-import scala.collection.mutable.ListBuffer
+import scala.+:
 
 case class Cart(items: Seq[Any]) {
   def contains(item: Any): Boolean = items.contains(item)
