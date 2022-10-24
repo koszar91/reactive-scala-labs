@@ -44,13 +44,8 @@ class TypedCheckout(
   val checkoutTimerDuration: FiniteDuration = 1 seconds
   val paymentTimerDuration: FiniteDuration  = 1 seconds
 
-  def start: Behavior[TypedCheckout.Command] = Behaviors.receive(
-    (context, msg) => {
-      msg match {
-        case StartCheckout =>
-          selectingDelivery(scheduleTimer(context, checkoutTimerDuration, ExpireCheckout))
-      }
-    }
+  def start: Behavior[TypedCheckout.Command] = Behaviors.setup(
+    context => selectingDelivery(scheduleTimer(context, checkoutTimerDuration, ExpireCheckout))
   )
 
   def selectingDelivery(timer: Cancellable): Behavior[TypedCheckout.Command] = Behaviors.receiveMessage {
@@ -84,6 +79,8 @@ class TypedCheckout(
 
   def processingPayment(timer: Cancellable): Behavior[TypedCheckout.Command] = Behaviors.receiveMessage {
     case ConfirmPaymentReceived =>
+      timer.cancel()
+      cartActor ! TypedCartActor.ConfirmCheckoutClosed
       closed
 
     case CancelCheckout =>

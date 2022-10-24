@@ -21,6 +21,13 @@ object TypedCartActor {
 
   sealed trait Event
   case class CheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Event
+
+  def apply(): Behavior[TypedCartActor.Command] = Behaviors.setup(
+    _ => {
+      val actor = new TypedCartActor()
+      actor.start
+    }
+  )
 }
 
 class TypedCartActor {
