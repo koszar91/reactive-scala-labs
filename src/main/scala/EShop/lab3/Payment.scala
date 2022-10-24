@@ -8,6 +8,16 @@ object Payment {
 
   sealed trait Command
   case object DoPayment extends Command
+
+  def apply(method: String,
+            orderManager: ActorRef[OrderManager.Command],
+            checkout: ActorRef[TypedCheckout.Command]): Behavior[Payment.Command] =
+    Behaviors.setup(
+      _ => {
+        val actor = new Payment(method, orderManager, checkout)
+        actor.start
+      }
+    )
 }
 
 class Payment(
