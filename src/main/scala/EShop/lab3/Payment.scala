@@ -20,14 +20,16 @@ object Payment {
     )
 }
 
-class Payment(
-  method: String,
-  orderManager: ActorRef[OrderManager.Command],
-  checkout: ActorRef[TypedCheckout.Command]
-) {
+class Payment(method: String,
+              orderManager: ActorRef[OrderManager.Command],
+              checkout: ActorRef[TypedCheckout.Command]) {
 
   import Payment._
 
-  def start: Behavior[Payment.Command] = ???
-
+  def start: Behavior[Payment.Command] = Behaviors.receiveMessage {
+    case DoPayment =>
+      checkout ! TypedCheckout.ConfirmPaymentReceived
+      orderManager ! OrderManager.ConfirmPaymentReceived
+      Behaviors.stopped
+  }
 }
