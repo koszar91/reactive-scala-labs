@@ -158,4 +158,44 @@ class PersistentCartActorTest
     resultAdd2.hasNoEvents shouldBe true
     resultAdd2.state shouldBe Empty
   }
+
+  // RESTORING ACTOR TESTS
+
+  it should "contain added items after restart" in {
+    val items = List("A", "B", "C")
+    items.foreach(item => eventSourcedTestKit.runCommand(AddItem(item)))
+
+    val restartResult = eventSourcedTestKit.restart()
+    items.foreach(item => restartResult.state.cart.contains(item) shouldBe true)
+  }
+
+  it should "stay in checkout with timer not cancelled after restart" in {
+    eventSourcedTestKit.runCommand(AddItem("A"))
+    eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command].ref))
+
+    val restartResult = eventSourcedTestKit.restart()
+    restartResult.state.isInstanceOf[InCheckout] shouldBe true
+  }
+
+  it should "not add items when in checkout after restart" in {
+    eventSourcedTestKit.runCommand(AddItem("A"))
+    eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[Any]().ref))
+
+    eventSourcedTestKit.restart()
+
+    val restartResult = eventSourcedTestKit.runCommand(AddItem("B"))
+    restartResult.state.cart.size shouldBe 1
+  }
+
+  it should "be empty after cart expires despite restarts" in {
+    val item = "A"
+    val addItemResult = eventSourcedTestKit.runCommand(AddItem(item))
+    addItemResult.state.cart.contains(item) shouldBe true
+    addItemResult.state.isInstanceOf[NonEmpty] shouldBe true
+
+    Thread.sleep(2000)
+    val restartResult = eventSourcedTestKit.restart()
+    restartResult.state.cart.contains(item) shouldBe false
+    restartResult.state shouldBe Empty
+  }
 }
