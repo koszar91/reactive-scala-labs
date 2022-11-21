@@ -27,8 +27,20 @@ object Payment {
       .receive[Message](
         (context, msg) =>
           msg match {
-            case DoPayment                                       => ???
-            case WrappedPaymentServiceResponse(PaymentSucceeded) => ???
+            case DoPayment =>
+              val adapter = context.messageAdapter[PaymentService.Response] {
+                case response@PaymentService.PaymentSucceeded => WrappedPaymentServiceResponse(response)
+              }
+              val paymentService = Behaviors
+                .supervise(PaymentService(method, adapter))
+                .onFailure(restartStrategy)
+              val paymentServiceRef = context.spawnAnonymous(paymentService)
+              context.watch(paymentServiceRef)
+              Behaviors.same
+            case WrappedPaymentServiceResponse(PaymentSucceeded) =>
+              orderManager ! OrderManager.ConfirmPaymentReceived
+              checkout ! TypedCheckout.ConfirmPaymentReceived
+              Behaviors.same
         }
       )
       .receiveSignal {
