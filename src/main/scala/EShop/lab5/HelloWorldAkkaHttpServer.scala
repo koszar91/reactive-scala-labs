@@ -31,7 +31,6 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
         case _             => throw new RuntimeException("Parsing exception")
       }
   }
-
 }
 
 object HelloWorldAkkaHttpServerApp extends App {
