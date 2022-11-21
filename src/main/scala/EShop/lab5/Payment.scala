@@ -32,10 +32,12 @@ object Payment {
         }
       )
       .receiveSignal {
-        case (context, Terminated(t)) => ???
+        case (_, Terminated(_)) =>
+          notifyAboutRejection(orderManager, checkout)
+          Behaviors.same
       }
 
-  // please use this one to notify when supervised actor was stoped
+  // please use this one to notify when supervised actor was stopped
   private def notifyAboutRejection(
     orderManager: ActorRef[OrderManager.Command],
     checkout: ActorRef[TypedCheckout.Command]
