@@ -237,4 +237,45 @@ class PersistentCheckoutTest
     resultCancelCheckout.hasNoEvents shouldBe true
     resultCancelCheckout.state shouldBe Closed
   }
+
+  // RESTORING ACTOR TESTS
+
+  it should "be in selecting delivery state with timer after restart" in {
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultRestartDuringSelectingDelivery = eventSourcedTestKit.restart()
+    resultRestartDuringSelectingDelivery.state.isInstanceOf[SelectingDelivery] shouldBe true
+  }
+
+  it should "be in selecting payment state with timer after restart" in {
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultRestartDuringSelectingPayment = eventSourcedTestKit.restart()
+    resultRestartDuringSelectingPayment.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+  }
+
+  it should "be in processing payment state with timer after restart" in {
+    val resultStartCheckout = eventSourcedTestKit.runCommand(StartCheckout)
+    resultStartCheckout.event shouldBe CheckoutStarted
+    resultStartCheckout.state.isInstanceOf[SelectingDelivery] shouldBe true
+
+    val resultSelectDelivery = eventSourcedTestKit.runCommand(SelectDeliveryMethod(deliveryMethod))
+    resultSelectDelivery.event.isInstanceOf[DeliveryMethodSelected] shouldBe true
+    resultSelectDelivery.state.isInstanceOf[SelectingPaymentMethod] shouldBe true
+
+    val resultSelectPayment = eventSourcedTestKit.runCommand(SelectPayment(paymentMethod, orderManagerProbe.ref))
+    resultSelectPayment.event.isInstanceOf[PaymentStarted] shouldBe true
+    resultSelectPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
+
+    val resultRestartDuringProcessPayment = eventSourcedTestKit.restart()
+    resultRestartDuringProcessPayment.state.isInstanceOf[ProcessingPayment] shouldBe true
+  }
 }
